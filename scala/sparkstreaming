@@ -1,1 +1,75 @@
+import org.apache.kafka.clients.consumer.ConsumerRecord
 
+import org.apache.kafka.common.serialization.StringDeserializer
+
+import org.apache.spark.streaming.kafka010._
+
+import org.apache.spark.streaming.kafka010.LocationStrategies.PreferConsistent
+
+import org.apache.spark.streaming.kafka010.ConsumerStrategies.Subscribe
+
+
+
+#parametros do kafka
+
+val kafkaParams = Map[String, Object](
+
+  "bootstrap.servers" -> "kafka:9092",
+
+  "key.deserializer" -> classOf[StringDeserializer],
+
+  "value.deserializer" -> classOf[StringDeserializer],
+
+  "group.id" -> "app-spark",
+
+  "auto.offset.reset" -> "latest",
+
+  "enable.auto.commit" -> (false: java.lang.Boolean)
+
+)
+
+
+
+print(kafkaParams)
+
+import org.apache.spark.streaming.{StreamingContext, Seconds}
+
+
+
+val ssc = new StreamingContext(sc, Seconds(5))
+
+val topics = Array("topic-spark")
+
+
+
+val stream = KafkaUtils.createDirectStream[String, String](
+
+  ssc,
+
+  PreferConsistent,
+
+  Subscribe[String, String](topics, kafkaParams)
+
+)
+
+
+
+stream.map(record => (record.key, record.value))
+
+
+
+
+
+val log_stream = stream.map(record =>  
+
+           (record.topic, 
+
+            record.partition,
+
+            record.value))
+
+            
+
+            
+
+log_stream.saveAsTextFiles("hdfs://namenode:8020/user/jairomonassa/kafka/stream")    
